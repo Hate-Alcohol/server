@@ -1,5 +1,7 @@
 package org.example.hatealcohol.config;
 
+import jakarta.servlet.http.HttpServletRequest;
+import java.util.Collections;
 import org.example.hatealcohol.jwt.JWTFilter;
 import org.example.hatealcohol.jwt.JWTUtil;
 import org.example.hatealcohol.oauth2.CustomSuccessHandler;
@@ -11,6 +13,8 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 @EnableWebSecurity
@@ -27,6 +31,29 @@ public class SecurityConfig {
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+
+        http
+            .cors(corsCustomizer -> corsCustomizer.configurationSource(new CorsConfigurationSource() {
+
+                @Override
+                public CorsConfiguration getCorsConfiguration(HttpServletRequest request) {
+
+                    CorsConfiguration configuration = new CorsConfiguration();
+
+                    configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                    configuration.setAllowedMethods(Collections.singletonList("*"));
+                    configuration.setAllowCredentials(true);
+                    configuration.setAllowedHeaders(Collections.singletonList("*"));
+                    configuration.setMaxAge(3600L);
+
+                    configuration.setExposedHeaders(Collections.singletonList("Set-Cookie"));
+                    configuration.setExposedHeaders(Collections.singletonList("Authorization"));
+
+                    return configuration;
+                }
+            }));
+
+
 
         //csrf disable -> jwt를 발급해서 stateless상태로 세션을 관리할거기 때문에 disable
         http
