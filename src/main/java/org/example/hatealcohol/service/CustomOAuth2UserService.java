@@ -41,8 +41,8 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         //리소스 서버에서 발급 받은 정보로 사용자를 특정할 아이디값을 만듬
         String username = oAuth2Response.getProvider() + " " + oAuth2Response.getProviderId();
 
-        User existData = userRepository.findByUsername(username);
-        if (existData == null) {
+        User foundUser = userRepository.findByUsername(username);
+        if (foundUser == null) {
             User user = new User();
             user.setUsername(username);
             user.setEmail(oAuth2Response.getEmail());
@@ -56,13 +56,13 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
             return new CustomOAuth2User(userDTO);
         } else {
 
-            existData.setEmail(oAuth2Response.getEmail());
-            existData.setName(oAuth2Response.getName());
-            userRepository.save(existData);
+            foundUser.setEmail(oAuth2Response.getEmail());
+            foundUser.setName(oAuth2Response.getName());
+            userRepository.save(foundUser);
             UserDTO userDTO = new UserDTO();
-            userDTO.setUsername(existData.getUsername());
+            userDTO.setUsername(foundUser.getUsername());
             userDTO.setName(oAuth2Response.getName());
-            userDTO.setRole(existData.getRole());
+            userDTO.setRole(foundUser.getRole());
 
             return new CustomOAuth2User(userDTO);
         }
