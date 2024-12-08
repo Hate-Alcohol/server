@@ -1,5 +1,6 @@
 package org.example.hatealcohol.config;
 
+import org.example.hatealcohol.jwt.JWTFilter;
 import org.example.hatealcohol.jwt.JWTUtil;
 import org.example.hatealcohol.oauth2.CustomSuccessHandler;
 import org.example.hatealcohol.service.CustomOAuth2UserService;
@@ -9,6 +10,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
 @EnableWebSecurity
@@ -35,6 +37,9 @@ public class SecurityConfig {
         //HTTP Basic 인증 방식 disable -> jwt와 ouath를 사용하여 로그인을 진행하기에 disable
         http
             .httpBasic((auth) -> auth.disable());
+        //JWTFilter 추가
+        http
+            .addFilterBefore(new JWTFilter(jwtUtil), UsernamePasswordAuthenticationFilter.class);
         //oauth2
         http
             .oauth2Login((oauth2) -> oauth2
