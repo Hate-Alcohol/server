@@ -1,4 +1,4 @@
-package org.example.hatealcohol.Oauth2.dto;
+package org.example.hatealcohol.dto;
 
 import java.util.Map;
 

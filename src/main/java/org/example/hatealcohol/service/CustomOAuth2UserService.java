@@ -1,9 +1,9 @@
-package org.example.hatealcohol.Oauth2.service;
+package org.example.hatealcohol.service;
 
-import org.example.hatealcohol.Oauth2.dto.CustomOAuth2User;
-import org.example.hatealcohol.Oauth2.dto.NaverResponse;
-import org.example.hatealcohol.Oauth2.dto.OAuth2Response;
-import org.example.hatealcohol.Oauth2.dto.UserDTO;
+import org.example.hatealcohol.dto.CustomOAuth2User;
+import org.example.hatealcohol.dto.NaverResponse;
+import org.example.hatealcohol.dto.OAuth2Response;
+import org.example.hatealcohol.dto.UserDTO;
 import org.example.hatealcohol.entity.UserEntity;
 import org.example.hatealcohol.repository.UserRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;

@@ -1,9 +1,8 @@
 package org.example.hatealcohol.config;
 
-import org.example.hatealcohol.Oauth2.service.CustomOAuth2UserService;
+import org.example.hatealcohol.service.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
