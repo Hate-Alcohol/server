@@ -1,5 +1,7 @@
 package org.example.hatealcohol.config;
 
+import org.example.hatealcohol.jwt.JWTUtil;
+import org.example.hatealcohol.oauth2.CustomSuccessHandler;
 import org.example.hatealcohol.service.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -13,9 +15,14 @@ import org.springframework.security.web.SecurityFilterChain;
 public class SecurityConfig {
 
     private final CustomOAuth2UserService customOAuth2UserService;
-    public SecurityConfig(CustomOAuth2UserService customOAuth2UserService) {
+    private final CustomSuccessHandler customSuccessHandler;
+    private final JWTUtil jwtUtil;
+    public SecurityConfig(CustomOAuth2UserService customOAuth2UserService, CustomSuccessHandler customSuccessHandler, JWTUtil jwtUtil) {
         this.customOAuth2UserService = customOAuth2UserService;
+        this.customSuccessHandler = customSuccessHandler;
+        this.jwtUtil = jwtUtil;
     }
+
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
 
@@ -30,9 +37,10 @@ public class SecurityConfig {
             .httpBasic((auth) -> auth.disable());
         //oauth2
         http
-            .oauth2Login((oauth2)->oauth2
+            .oauth2Login((oauth2) -> oauth2
                 .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
-                    .userService(customOAuth2UserService)));
+                    .userService(customOAuth2UserService))
+                .successHandler(customSuccessHandler));
         //경로별 인가 작업 -> 일단은 / 경로만
         http
             .authorizeHttpRequests((auth) -> auth
