@@ -1,4 +1,4 @@
-package org.example.hatealcohol.gps.config;
+package org.example.hatealcohol.gps.config.websocket;
 
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
