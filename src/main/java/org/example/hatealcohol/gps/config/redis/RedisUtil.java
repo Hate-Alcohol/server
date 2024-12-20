@@ -37,6 +37,12 @@ public class RedisUtil {
     return historyRequest;
   }
 
+  public void deleteLocationHistory(Long sessionId) {
+
+    String key = createLocationHistoryKey(sessionId);
+    redisTemplate.delete(key);
+  }
+
   private String createLocationHistoryKey(Long sessionId) {
     return "location_history:" + sessionId;
   }
