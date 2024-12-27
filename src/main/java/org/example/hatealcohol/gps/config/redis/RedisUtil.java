@@ -1,10 +1,11 @@
 package org.example.hatealcohol.gps.config.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.example.hatealcohol.gps.dto.LocationHistoryRequest;
+import org.example.hatealcohol.gps.exception.RedisGetObjectListException;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,37 +14,38 @@ import org.springframework.stereotype.Component;
 public class RedisUtil {
 
   private final RedisTemplate<String, Object> redisTemplate;
+  private final ObjectMapper objectMapper;
 
-  public void saveLocationHistory(Long sessionId, LocationHistoryRequest locationRequest) {
-
-    String key = createLocationHistoryKey(sessionId);
-    redisTemplate.opsForList().rightPush(key, locationRequest); // 순차 저장
+  public <T> void saveObjectList(String key, T object) {
+    redisTemplate.opsForList().rightPush(key, object); // 순차 저장
   }
 
-  public List<LocationHistoryRequest> getLocationHistory(Long sessionId) {
+  public <T> void saveObjectList(String key, T object, long expiration) {
+    redisTemplate.opsForList().rightPush(key, object);
+    redisTemplate.expire(key, Duration.ofSeconds(expiration));
+  }
 
-    String key = createLocationHistoryKey(sessionId);
-    List<Object> redisData = redisTemplate.opsForList().range(key, 0, -1); // 처음부터 끝 인덱스
+  public <T> List<T> getObjectList(String key, Class<T> clazz) {
 
-    ObjectMapper mapper = new ObjectMapper();
-    List<LocationHistoryRequest> historyRequest = new ArrayList<>();
+    try {
+      List<Object> redisData = redisTemplate.opsForList().range(key, 0, -1); // 처음부터 끝 인덱스
 
-    for (Object obj : redisData) {
-      historyRequest.add(
-          mapper.convertValue(obj, LocationHistoryRequest.class)
-      );
+      List<T> list = new ArrayList<>();
+      for (Object obj : redisData) {
+        list.add(objectMapper.convertValue(obj, clazz));
+      }
+
+      return list;
+    } catch (Exception e) {
+      throw new RedisGetObjectListException("Redis에서 리스트를 가져오지 못했습니다.: " + e.getMessage());
     }
-
-    return historyRequest;
   }
 
-  public void deleteLocationHistory(Long sessionId) {
-
-    String key = createLocationHistoryKey(sessionId);
+  public void deleteLocationHistory(String key) {
     redisTemplate.delete(key);
   }
 
-  private String createLocationHistoryKey(Long sessionId) {
-    return "location_history:" + sessionId;
+  public String createKey(String prefix, String id) {
+    return prefix + ":" + id;
   }
 }
