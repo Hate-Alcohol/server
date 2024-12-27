@@ -24,9 +24,6 @@ public class SharingSession { // 사용자의 위치를 공유하는 세션을 �
   @Column(name = "schedule_id", nullable = false)
   private Long scheduleId;
 
-  @Column(name = "session_token")
-  private String sessionToken; // 위치 공유 권한 인증용 컬럼
-
   @Column(name = "is_active", nullable = false)
   private boolean isActive;
 
