@@ -4,6 +4,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
@@ -21,8 +23,12 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 public class WebSocketHandler extends TextWebSocketHandler {
 
   private final ObjectMapper objectMapper = new ObjectMapper();
-  private final ConcurrentMap<String, WebSocketSession> GPS_SESSION = new ConcurrentHashMap<>();
+
+  // 호스트(위치가 공유되는 사람) 세션과 공유자 세션을 관리하기 위한 맵
+  private final ConcurrentMap<String, WebSocketSession> HOST_SESSIONS = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, List<WebSocketSession>> SHARED_SESSIONS = new ConcurrentHashMap<>();
   private final RedisUtil redisUtil;
+//  private final UserService userService;
 
   @Override
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -32,20 +38,45 @@ public class WebSocketHandler extends TextWebSocketHandler {
     // 이 과정에서 사용자가 설정한 사람들에게 웹소켓 세션 정보를 전해줄 수 있어야 함
     // 타 사용자들은 알림을 받고, 해당하는 세션을 통해 위치를 공유 받아야 함
     // 그와 동시에 위치를 Redis 에 기록해야 함
-//    session.getId() -> 얘를 공유자들에게 알림으로 보내주면 될듯?
     validationUri(session.getUri());
-
     String uri = session.getUri().toString();
-    String id = extractIdFromUri(uri);
+    String role = extractRoleFromUri(uri); // URI에서 role=host 또는 role=shared 추출
 
-    GPS_SESSION.put(id, session);
+    if ("host".equals(role)) { // 호스트 세션 등록
+      String hostSessionId = session.getId();
+      HOST_SESSIONS.put(hostSessionId, session);
+      SHARED_SESSIONS.putIfAbsent(hostSessionId, new ArrayList<>());
+      // notifySharedUsers(hostSessionId); // 공유자들에게 알림 전송
+    } else if ("shared".equals(role)) {
+
+      String hostSessionId = extractHostSessionIdFromUri(uri);
+      WebSocketSession hostSession = HOST_SESSIONS.get(hostSessionId);
+
+      if (hostSession == null || !hostSession.isOpen()) {
+        throw new InvalidUriException("호스트 세션이 존재하지 않거나 닫혀 있습니다.");
+      }
+
+      // 공유자의 세션 등록
+      SHARED_SESSIONS.computeIfPresent(hostSessionId, (key, sessions) -> {
+        sessions.add(session);
+        return sessions;
+      });
+
+      // 공유자가 들어 오면 들어왔다고 호스트에게 공유자 객체를 넘기는 로직
+      // 영통 가능하면 재밌을듯 ㅋㅋ
+    }
   }
 
+  // 이 메서드를 통해 실시간 위치를 보내서 표현
   @Override
   protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
     super.handleTextMessage(session, message);
   }
 
+  // 이머전시가 발생한 유저를 호스트라고 지칭한다면,
+  // 호스트가 연결을 종료하면 전부 끝
+  // but, 공유자들은 나갔다가 들어올 수 있도록 설계할 생각
+  // 호스트가 나간다면 그동안의 위치 기록을 시각화 하는 로직이 실행되어야 함
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
     super.afterConnectionClosed(session, status);
@@ -58,18 +89,48 @@ public class WebSocketHandler extends TextWebSocketHandler {
     }
   }
 
-  private String extractIdFromUri(String uri) {
-
-    String id = null;
-
-    if (uri.contains("id=")) {
-      id = URLDecoder.decode(uri.split("id=")[1], StandardCharsets.UTF_8);
+  /**
+   * URI에서 ID를 추출하는 메서드.
+   */
+  private String extractHostSessionIdFromUri(String uri) {
+    String hostSessionId = null;
+    if (uri.contains("hostSessionId=")) {
+      hostSessionId = URLDecoder.decode(uri.split("id=")[1], StandardCharsets.UTF_8);
     }
-
-    if (id == null) {
-      throw new SocketIdNullException("소켓 아이디가 없습니다.");
+    if (hostSessionId == null) {
+      throw new SocketIdNullException("호스트 세션 아이디가 없습니다.");
     }
-
-    return id;
+    return hostSessionId;
   }
+
+  /**
+   * URI에서 역할(role)을 추출하는 메서드.
+   */
+  private String extractRoleFromUri(String uri) {
+    String role = null;
+    if (uri.contains("role=")) {
+      role = URLDecoder.decode(uri.split("role=")[1].split("&")[0], StandardCharsets.UTF_8);
+    }
+    if (role == null) {
+      throw new InvalidUriException("역할이 없습니다.");
+    }
+    return role;
+  }
+
+  /**
+   * 세션에서 호스트 ID를 추출하는 메서드.
+   */
+  private String extractIdFromSession(WebSocketSession session) {
+    return extractHostSessionIdFromUri(session.getUri().toString());
+  }
+
+  /**
+   * 공유 대상자들에게 알림을 전송하는 메서드.
+   */
+//  private void notifySharedUsers(String hostId) {
+//    List<String> sharedUsers = redisUtil.getSharedUsers(hostId); // Redis에서 대상자 목록 가져오기
+//    sharedUsers.forEach(userId -> {
+//      // 알림 전송 로직 추가 (예: Push Notification, Email 등)
+//    });
+//  }
 }
