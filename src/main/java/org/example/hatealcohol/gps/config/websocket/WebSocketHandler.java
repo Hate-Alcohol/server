@@ -9,9 +9,9 @@ import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import lombok.RequiredArgsConstructor;
-import org.example.hatealcohol.gps.config.redis.RedisUtil;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
 import org.example.hatealcohol.gps.exception.SocketIdNullException;
+import org.example.hatealcohol.gps.service.LocationService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
@@ -22,12 +22,13 @@ import org.springframework.web.socket.handler.TextWebSocketHandler;
 @RequiredArgsConstructor
 public class WebSocketHandler extends TextWebSocketHandler {
 
-  private final ObjectMapper objectMapper = new ObjectMapper();
+  private final ObjectMapper objectMapper;
 
   // 호스트(위치가 공유되는 사람) 세션과 공유자 세션을 관리하기 위한 맵
+  // 아직 세션 아이디에 관련해서 어떻게 설계할지 결정을 못함
   private final ConcurrentMap<String, WebSocketSession> HOST_SESSIONS = new ConcurrentHashMap<>();
   private final ConcurrentMap<String, List<WebSocketSession>> SHARED_SESSIONS = new ConcurrentHashMap<>();
-  private final RedisUtil redisUtil;
+  private final LocationService locationService;
 //  private final UserService userService;
 
   @Override
@@ -49,7 +50,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
       // notifySharedUsers(hostSessionId); // 공유자들에게 알림 전송
     } else if ("shared".equals(role)) {
 
-      String hostSessionId = extractHostSessionIdFromUri(uri);
+      String hostSessionId = extractSessionIdFromUri(uri);
       WebSocketSession hostSession = HOST_SESSIONS.get(hostSessionId);
 
       if (hostSession == null || !hostSession.isOpen()) {
@@ -70,7 +71,10 @@ public class WebSocketHandler extends TextWebSocketHandler {
   // 이 메서드를 통해 실시간 위치를 보내서 표현
   @Override
   protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
-    super.handleTextMessage(session, message);
+    String hostSessionId = session.getId();
+
+    // 호스트가 공유자들에게 위치 데이터를 보내는 로직
+//    if (HOST_SESSIONS.containsKey(hostSessionId))
   }
 
   // 이머전시가 발생한 유저를 호스트라고 지칭한다면,
@@ -79,6 +83,36 @@ public class WebSocketHandler extends TextWebSocketHandler {
   // 호스트가 나간다면 그동안의 위치 기록을 시각화 하는 로직이 실행되어야 함
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
+
+    String sessionId = session.getId();
+
+    if (HOST_SESSIONS.containsKey(sessionId)) {
+
+      List<WebSocketSession> sharedSessions = SHARED_SESSIONS.remove(sessionId);
+
+      if (sharedSessions != null) {
+        for (WebSocketSession sharedSession : sharedSessions) {
+          if (sharedSession.isOpen()) {
+            sharedSession.close();
+          }
+        }
+      }
+
+      HOST_SESSIONS.remove(sessionId);
+
+//      // 위치 데이터 정리 및 시각화
+//      String locationData = redisUtil.getLocationData(sessionId);
+//      if (locationData != null) {
+//        visualizeLocationData(locationData); // 위치 데이터 시각화 로직 호출
+//      }
+//      redisUtil.deleteLocationData(sessionId); // Redis에서 위치 데이터 제거
+    } else {
+
+      SHARED_SESSIONS.forEach((hostSessionId, sessions) -> {
+        sessions.removeIf(sharedSession -> sharedSession.getId().equals(sessionId));
+      });
+    }
+
     super.afterConnectionClosed(session, status);
   }
 
@@ -92,15 +126,15 @@ public class WebSocketHandler extends TextWebSocketHandler {
   /**
    * URI에서 ID를 추출하는 메서드.
    */
-  private String extractHostSessionIdFromUri(String uri) {
-    String hostSessionId = null;
-    if (uri.contains("hostSessionId=")) {
-      hostSessionId = URLDecoder.decode(uri.split("id=")[1], StandardCharsets.UTF_8);
+  private String extractSessionIdFromUri(String uri) {
+    String sessionId = null;
+    if (uri.contains("sessionId=")) {
+      sessionId = URLDecoder.decode(uri.split("sessionId=")[1], StandardCharsets.UTF_8);
     }
-    if (hostSessionId == null) {
-      throw new SocketIdNullException("호스트 세션 아이디가 없습니다.");
+    if (sessionId == null) {
+      throw new SocketIdNullException("세션 아이디가 없습니다.");
     }
-    return hostSessionId;
+    return sessionId;
   }
 
   /**
@@ -115,13 +149,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
       throw new InvalidUriException("역할이 없습니다.");
     }
     return role;
-  }
-
-  /**
-   * 세션에서 호스트 ID를 추출하는 메서드.
-   */
-  private String extractIdFromSession(WebSocketSession session) {
-    return extractHostSessionIdFromUri(session.getUri().toString());
   }
 
   /**
