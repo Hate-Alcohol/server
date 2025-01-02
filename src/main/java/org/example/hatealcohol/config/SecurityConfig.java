@@ -40,7 +40,7 @@ public class SecurityConfig {
 
                     CorsConfiguration configuration = new CorsConfiguration();
 
-                    configuration.setAllowedOrigins(Collections.singletonList("http://localhost:3000"));
+                    configuration.setAllowedOrigins(Collections.singletonList("http://localhost:8080"));
                     configuration.setAllowedMethods(Collections.singletonList("*"));
                     configuration.setAllowCredentials(true);
                     configuration.setAllowedHeaders(Collections.singletonList("*"));
@@ -74,18 +74,9 @@ public class SecurityConfig {
                     .userService(customOAuth2UserService))
                 .successHandler(customSuccessHandler));
         //경로별 인가 작업 -> 일단은 / 경로만
-                .successHandler((request, response, authentication) -> {
-                    System.out.println("로그인 성공! 유저 정보: " + authentication.getPrincipal());
-                    response.sendRedirect("/success");
-                })
-                .failureHandler((request, response, exception) -> {
-                    System.out.println("로그인 실패: " + exception.getMessage());
-                    response.sendRedirect("/");
-                }));
-
         http
             .authorizeHttpRequests((auth) -> auth
-                .requestMatchers("/", "/success").permitAll()
+                .requestMatchers("/").permitAll()
                 .anyRequest().authenticated());
 
         http
