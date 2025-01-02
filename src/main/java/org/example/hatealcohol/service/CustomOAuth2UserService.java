@@ -2,6 +2,7 @@ package org.example.hatealcohol.service;
 
 import org.example.hatealcohol.dto.CustomOAuth2User;
 import org.example.hatealcohol.dto.GoogleResponse;
+import org.example.hatealcohol.dto.KakaoResponse;
 import org.example.hatealcohol.dto.NaverResponse;
 import org.example.hatealcohol.dto.OAuth2Response;
 import org.example.hatealcohol.dto.UserDTO;
@@ -37,6 +38,9 @@ public class CustomOAuth2UserService extends DefaultOAuth2UserService {
         if (registrationId.equals("google")) {
             oAuth2Response = new GoogleResponse(oAuth2User.getAttributes());
         } else {
+        if (registrationId.equals("kakao")) {
+            oAuth2Response = new KakaoResponse(oAuth2User.getAttributes());
+        }else {
 
             return null;
         }
