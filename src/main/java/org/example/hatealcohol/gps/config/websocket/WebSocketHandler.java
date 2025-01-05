@@ -24,6 +24,14 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
   private final ObjectMapper objectMapper;
 
+  // TODO: 2024-12-27 웹소켓 로직 설계, 프론트엔드도 해야함, 알림도 고려...?
+
+
+
+
+
+
+
   // 호스트(위치가 공유되는 사람) 세션과 공유자 세션을 관리하기 위한 맵
   // 아직 세션 아이디에 관련해서 어떻게 설계할지 결정을 못함
   private final ConcurrentMap<String, WebSocketSession> HOST_SESSIONS = new ConcurrentHashMap<>();
