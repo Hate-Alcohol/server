@@ -38,3 +38,5 @@ out/
 
 # Spring Boot의 설정 파일들
 /application.properties
+
+.env
