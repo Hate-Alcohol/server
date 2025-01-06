@@ -17,12 +17,15 @@ public class RedisUtil {
   private final ObjectMapper objectMapper;
 
   public <T> void saveObjectList(String key, T object) {
-    redisTemplate.opsForList().rightPush(key, object); // 순차 저장
+    saveObjectList(key, object, 0);
   }
 
-  public <T> void saveObjectList(String key, T object, long expiration) {
-    redisTemplate.opsForList().rightPush(key, object);
-    redisTemplate.expire(key, Duration.ofSeconds(expiration));
+  public <T> void saveObjectList(String key, T object, long expirationInSeconds) {
+    redisTemplate.opsForList().rightPush(key, object); // 순차 저장
+
+    if (expirationInSeconds > 0) {
+      redisTemplate.expire(key, Duration.ofSeconds(expirationInSeconds));
+    }
   }
 
   public <T> List<T> getObjectList(String key, Class<T> clazz) {
@@ -41,11 +44,11 @@ public class RedisUtil {
     }
   }
 
-  public void deleteLocationHistory(String key) {
+  public void deleteByKey(String key) {
     redisTemplate.delete(key);
   }
 
   public String createKey(String prefix, String id) {
-    return prefix + ":" + id;
+    return String.join(":", prefix, id);
   }
 }
