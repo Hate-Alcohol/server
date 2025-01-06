@@ -2,7 +2,7 @@ package org.example.hatealcohol.gps.service;
 
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.example.hatealcohol.gps.config.redis.RedisUtil;
+import org.example.hatealcohol.common.redis.RedisUtil;
 import org.example.hatealcohol.gps.dto.LocationHistoryRequest;
 import org.springframework.stereotype.Service;
 
