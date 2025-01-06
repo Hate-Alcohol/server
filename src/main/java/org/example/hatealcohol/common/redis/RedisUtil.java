@@ -1,4 +1,4 @@
-package org.example.hatealcohol.gps.config.redis;
+package org.example.hatealcohol.common.redis;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Duration;

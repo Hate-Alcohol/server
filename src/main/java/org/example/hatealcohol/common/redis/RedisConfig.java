@@ -1,4 +1,4 @@
-package org.example.hatealcohol.gps.config.redis;
+package org.example.hatealcohol.common.redis;
 
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
