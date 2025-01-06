@@ -1,4 +1,4 @@
-package org.example.hatealcohol.oauth2;
+package org.example.hatealcohol.user.oauth2;
 
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
@@ -7,8 +7,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Iterator;
-import org.example.hatealcohol.dto.CustomOAuth2User;
-import org.example.hatealcohol.jwt.JWTUtil;
+import org.example.hatealcohol.user.dto.CustomOAuth2User;
+import org.example.hatealcohol.common.jwt.JWTUtil;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;

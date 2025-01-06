@@ -1,4 +1,4 @@
-package org.example.hatealcohol.jwt;
+package org.example.hatealcohol.user.jwt;
 
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -6,8 +6,9 @@ import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.example.hatealcohol.dto.CustomOAuth2User;
-import org.example.hatealcohol.dto.UserDTO;
+import org.example.hatealcohol.common.jwt.JWTUtil;
+import org.example.hatealcohol.user.dto.CustomOAuth2User;
+import org.example.hatealcohol.user.dto.UserDTO;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;

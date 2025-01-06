@@ -1,13 +1,13 @@
-package org.example.hatealcohol.service;
+package org.example.hatealcohol.user.service;
 
-import org.example.hatealcohol.dto.CustomOAuth2User;
-import org.example.hatealcohol.dto.GoogleResponse;
-import org.example.hatealcohol.dto.KakaoResponse;
-import org.example.hatealcohol.dto.NaverResponse;
-import org.example.hatealcohol.dto.OAuth2Response;
-import org.example.hatealcohol.dto.UserDTO;
-import org.example.hatealcohol.entity.User;
-import org.example.hatealcohol.repository.UserRepository;
+import org.example.hatealcohol.user.dto.CustomOAuth2User;
+import org.example.hatealcohol.user.dto.GoogleResponse;
+import org.example.hatealcohol.user.dto.KakaoResponse;
+import org.example.hatealcohol.user.dto.NaverResponse;
+import org.example.hatealcohol.user.dto.OAuth2Response;
+import org.example.hatealcohol.user.dto.UserDTO;
+import org.example.hatealcohol.user.entity.User;
+import org.example.hatealcohol.user.repository.UserRepository;
 import org.springframework.security.oauth2.client.userinfo.DefaultOAuth2UserService;
 import org.springframework.security.oauth2.client.userinfo.OAuth2UserRequest;
 import org.springframework.security.oauth2.core.OAuth2AuthenticationException;

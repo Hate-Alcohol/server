@@ -1,11 +1,11 @@
-package org.example.hatealcohol.config;
+package org.example.hatealcohol.user.config;
 
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
-import org.example.hatealcohol.jwt.JWTFilter;
-import org.example.hatealcohol.jwt.JWTUtil;
-import org.example.hatealcohol.oauth2.CustomSuccessHandler;
-import org.example.hatealcohol.service.CustomOAuth2UserService;
+import org.example.hatealcohol.user.jwt.JWTFilter;
+import org.example.hatealcohol.common.jwt.JWTUtil;
+import org.example.hatealcohol.user.oauth2.CustomSuccessHandler;
+import org.example.hatealcohol.user.service.CustomOAuth2UserService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;

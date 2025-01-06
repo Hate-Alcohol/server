@@ -1,4 +1,4 @@
-package org.example.hatealcohol.entity;
+package org.example.hatealcohol.user.entity;
 
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;

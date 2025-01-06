@@ -1,4 +1,4 @@
-package org.example.hatealcohol.dto;
+package org.example.hatealcohol.user.dto;
 
 import lombok.Getter;
 import lombok.Setter;

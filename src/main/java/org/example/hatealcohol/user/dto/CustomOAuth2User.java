@@ -1,4 +1,4 @@
-package org.example.hatealcohol.dto;
+package org.example.hatealcohol.user.dto;
 
 import java.util.ArrayList;
 import java.util.Collection;

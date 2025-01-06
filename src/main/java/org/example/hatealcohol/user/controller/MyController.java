@@ -1,4 +1,4 @@
-package org.example.hatealcohol.controller;
+package org.example.hatealcohol.user.controller;
 
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
