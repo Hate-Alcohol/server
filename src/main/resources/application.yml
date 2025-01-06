@@ -1,0 +1,48 @@
+spring:
+  application:
+    name: Hate-Alcohol
+  profiles:
+    active: local # default
+    group:
+      local:
+        - common
+      prod:
+        - common
+
+---
+spring:
+  config:
+    activate:
+      on-profile: common # local, prod에서 공통으로 사용할 설정 값
+    import: optional:file:.env[.properties]
+
+  jwt:
+    secret: ${JWT_SECRET_KEY}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: local
+
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: ${LOCAL_PAYMENT_DB_URL}
+    username: ${LOCAL_DB_USERNAME}
+    password: ${LOCAL_DB_PASSWORD}
+
+  jpa:
+    hibernate:
+      ddl-auto: create
+    show-sql: true
+
+  data:
+    redis:
+      host: ${LOCAL_REDIS_HOST}
+      port: ${LOCAL_REDIS_PORT}
+
+---
+spring:
+  config:
+    activate:
+      on-profile: prod
