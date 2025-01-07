@@ -1,43 +1,36 @@
 package org.example.hatealcohol.gps.config.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.net.URI;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.RequiredArgsConstructor;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
-import org.example.hatealcohol.gps.exception.SocketIdNullException;
 import org.example.hatealcohol.gps.service.LocationService;
+import org.example.hatealcohol.user.service.UserService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 import org.springframework.web.socket.handler.TextWebSocketHandler;
 
+import static org.example.hatealcohol.gps.config.websocket.WebSocketUtil.*;
+
 @Component
 @RequiredArgsConstructor
 public class WebSocketHandler extends TextWebSocketHandler {
 
-  private final ObjectMapper objectMapper;
-
   // TODO: 2024-12-27 웹소켓 로직 설계, 프론트엔드도 해야함, 알림도 고려...?
-
-
-
-
-
-
 
   // 호스트(위치가 공유되는 사람) 세션과 공유자 세션을 관리하기 위한 맵
   // 아직 세션 아이디에 관련해서 어떻게 설계할지 결정을 못함
   private final ConcurrentMap<String, WebSocketSession> HOST_SESSIONS = new ConcurrentHashMap<>();
-  private final ConcurrentMap<String, List<WebSocketSession>> SHARED_SESSIONS = new ConcurrentHashMap<>();
+  private final ConcurrentMap<String, CopyOnWriteArrayList<WebSocketSession>> SHARED_SESSIONS = new ConcurrentHashMap<>();
   private final LocationService locationService;
-//  private final UserService userService;
+  private final UserService userService;
+  private final ObjectMapper objectMapper;
 
   @Override
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -54,7 +47,7 @@ public class WebSocketHandler extends TextWebSocketHandler {
     if ("host".equals(role)) { // 호스트 세션 등록
       String hostSessionId = session.getId();
       HOST_SESSIONS.put(hostSessionId, session);
-      SHARED_SESSIONS.putIfAbsent(hostSessionId, new ArrayList<>());
+      SHARED_SESSIONS.putIfAbsent(hostSessionId, new CopyOnWriteArrayList<>());
       // notifySharedUsers(hostSessionId); // 공유자들에게 알림 전송
     } else if ("shared".equals(role)) {
 
@@ -64,6 +57,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
       if (hostSession == null || !hostSession.isOpen()) {
         throw new InvalidUriException("호스트 세션이 존재하지 않거나 닫혀 있습니다.");
       }
+
+      session.getAttributes().put("hostSessionId", hostSessionId);
 
       // 공유자의 세션 등록
       SHARED_SESSIONS.computeIfPresent(hostSessionId, (key, sessions) -> {
@@ -116,47 +111,22 @@ public class WebSocketHandler extends TextWebSocketHandler {
 //      redisUtil.deleteLocationData(sessionId); // Redis에서 위치 데이터 제거
     } else {
 
-      SHARED_SESSIONS.forEach((hostSessionId, sessions) -> {
-        sessions.removeIf(sharedSession -> sharedSession.getId().equals(sessionId));
-      });
+      String hostSessionId = (String) session.getAttributes().get("hostSessionId");
+
+      if (hostSessionId != null) {
+        CopyOnWriteArrayList<WebSocketSession> sharedSession = SHARED_SESSIONS.get(hostSessionId);
+
+        if (sharedSession != null) {
+          sharedSession.remove(session);
+        }
+      }
+
+//      SHARED_SESSIONS.forEach((hostSessionId, sessions) -> {
+//        sessions.removeIf(sharedSession -> sharedSession.getId().equals(sessionId));
+//      });
     }
 
     super.afterConnectionClosed(session, status);
-  }
-
-  private void validationUri(URI uri) {
-
-    if (uri == null) {
-      throw new InvalidUriException("유효한 URI가 아닙니다");
-    }
-  }
-
-  /**
-   * URI에서 ID를 추출하는 메서드.
-   */
-  private String extractSessionIdFromUri(String uri) {
-    String sessionId = null;
-    if (uri.contains("sessionId=")) {
-      sessionId = URLDecoder.decode(uri.split("sessionId=")[1], StandardCharsets.UTF_8);
-    }
-    if (sessionId == null) {
-      throw new SocketIdNullException("세션 아이디가 없습니다.");
-    }
-    return sessionId;
-  }
-
-  /**
-   * URI에서 역할(role)을 추출하는 메서드.
-   */
-  private String extractRoleFromUri(String uri) {
-    String role = null;
-    if (uri.contains("role=")) {
-      role = URLDecoder.decode(uri.split("role=")[1].split("&")[0], StandardCharsets.UTF_8);
-    }
-    if (role == null) {
-      throw new InvalidUriException("역할이 없습니다.");
-    }
-    return role;
   }
 
   /**
