@@ -23,7 +23,7 @@ public class GpsExceptionHandler {
   }
 
   @ExceptionHandler
-  public ResponseEntity<ErrorResponse> catchSocketIdNullException(SocketIdNullException e) {
+  public ResponseEntity<ErrorResponse> catchWebSocketSessionIdNullException(WebSocketSessionIdNullException e) {
     return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
   }
 
