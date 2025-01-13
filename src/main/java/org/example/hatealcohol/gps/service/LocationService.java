@@ -3,7 +3,7 @@ package org.example.hatealcohol.gps.service;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.example.hatealcohol.common.redis.RedisUtil;
-import org.example.hatealcohol.gps.dto.LocationHistoryRequest;
+import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -14,19 +14,19 @@ public class LocationService {
   private final long LOCATION_EXPIRATION = 172800; // 2일
   private final String LOCATION_PREFIX = "location_history";
 
-  public void saveLocationList(String sessionId, LocationHistoryRequest locationHistoryRequest) {
+  public void saveLocationList(String sessionId, LocationRequest locationRequest) {
 
-    validateLocationData(locationHistoryRequest);
+    validateLocationData(locationRequest);
     String key = redisUtil.createKey(LOCATION_PREFIX, sessionId);
-    redisUtil.saveObjectList(key, locationHistoryRequest, LOCATION_EXPIRATION);
+    redisUtil.saveObjectList(key, locationRequest, LOCATION_EXPIRATION);
   }
 
-  public List<LocationHistoryRequest> getLocationHistories(String sessionId) {
+  public List<LocationRequest> getLocationHistories(String sessionId) {
     String key = redisUtil.createKey(LOCATION_PREFIX, sessionId);
-    return redisUtil.getObjectList(key, LocationHistoryRequest.class);
+    return redisUtil.getObjectList(key, LocationRequest.class);
   }
 
-  private void validateLocationData(LocationHistoryRequest locationRequest) {
+  private void validateLocationData(LocationRequest locationRequest) {
     if (locationRequest.getLatitude() < -90 || locationRequest.getLatitude() > 90) {
       throw new IllegalArgumentException("Invalid latitude value");
     }
