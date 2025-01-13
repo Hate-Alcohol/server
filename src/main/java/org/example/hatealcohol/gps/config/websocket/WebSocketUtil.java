@@ -7,8 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
+import org.example.hatealcohol.gps.exception.WebSocketHandleMessageException;
 import org.example.hatealcohol.gps.exception.WebSocketJsonParsingException;
 import org.example.hatealcohol.gps.exception.WebSocketSessionIdNullException;
+import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
 public class WebSocketUtil {
@@ -50,6 +52,29 @@ public class WebSocketUtil {
       return objectMapper.readValue(payload, LocationRequest.class);
     } catch (Exception e) {
       throw new WebSocketJsonParsingException("웹소켓 ObjectMapper parsing 에러: " + e.getMessage());
+    }
+  }
+
+  public static void sendLocationDataToSharedUser(CopyOnWriteArrayList<WebSocketSession> sharedUsers, LocationRequest locationRequest) {
+
+    try {
+      String message = serializeToJson(locationRequest);
+
+      for (WebSocketSession session : sharedUsers) {
+        if (session.isOpen()) {
+          session.sendMessage(new TextMessage(message));
+        }
+      }
+    } catch (Exception e) {
+      throw new WebSocketHandleMessageException("웹소켓 메시지 처리 에러: " + e.getMessage());
+    }
+  }
+
+  private static String serializeToJson(Object object) {
+    try {
+      return objectMapper.writeValueAsString(object);
+    } catch (Exception e) {
+      throw new WebSocketJsonParsingException("웹소켓 ObjectMapper JSON 직렬화 에러: " + e.getMessage());
     }
   }
 }
