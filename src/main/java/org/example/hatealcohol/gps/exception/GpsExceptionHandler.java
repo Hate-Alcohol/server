@@ -17,6 +17,11 @@ public class GpsExceptionHandler {
     return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
   }
 
+  @ExceptionHandler
+  public ResponseEntity<ErrorResponse> catchInvalidUriException(InvalidUriException e) {
+    return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
+  }
+
   private ErrorResponse buildErrorResponse(String message) {
     return ErrorResponse.builder()
         .message(message)
