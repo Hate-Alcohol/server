@@ -1,13 +1,14 @@
 package org.example.hatealcohol.gps.config.websocket;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.RequiredArgsConstructor;
+import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
+import org.example.hatealcohol.gps.exception.WebSocketHandleMessageException;
 import org.example.hatealcohol.gps.service.LocationService;
 import org.example.hatealcohol.user.service.UserService;
 import org.springframework.stereotype.Component;
@@ -30,7 +31,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
   private final ConcurrentMap<String, CopyOnWriteArrayList<WebSocketSession>> SHARED_SESSIONS = new ConcurrentHashMap<>();
   private final LocationService locationService;
   private final UserService userService;
-  private final ObjectMapper objectMapper;
 
   @Override
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
@@ -73,11 +73,16 @@ public class WebSocketHandler extends TextWebSocketHandler {
 
   // 이 메서드를 통해 실시간 위치를 보내서 표현
   @Override
-  protected void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
+  protected void handleTextMessage(WebSocketSession session, TextMessage message) {
     String hostSessionId = session.getId();
+    String payload = message.getPayload();
+
+    LocationRequest locationRequest = toLocationRequest(payload);
 
     // 호스트가 공유자들에게 위치 데이터를 보내는 로직
-//    if (HOST_SESSIONS.containsKey(hostSessionId))
+    CopyOnWriteArrayList<WebSocketSession> sharedUsers = SHARED_SESSIONS.get(hostSessionId);
+
+    sendLocationDataToSharedUser(sharedUsers, locationRequest);
   }
 
   // 이머전시가 발생한 유저를 호스트라고 지칭한다면,
