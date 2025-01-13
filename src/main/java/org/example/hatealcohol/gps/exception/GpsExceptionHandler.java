@@ -22,6 +22,11 @@ public class GpsExceptionHandler {
     return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
   }
 
+  @ExceptionHandler
+  public ResponseEntity<ErrorResponse> catchSocketIdNullException(SocketIdNullException e) {
+    return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
+  }
+
   private ErrorResponse buildErrorResponse(String message) {
     return ErrorResponse.builder()
         .message(message)
