@@ -4,7 +4,7 @@ import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
-import org.example.hatealcohol.gps.exception.SocketIdNullException;
+import org.example.hatealcohol.gps.exception.WebSocketSessionIdNullException;
 
 public class WebSocketUtil {
 
@@ -21,7 +21,7 @@ public class WebSocketUtil {
       sessionId = URLDecoder.decode(uri.split("sessionId=")[1], StandardCharsets.UTF_8);
     }
     if (sessionId == null) {
-      throw new SocketIdNullException("세션 아이디가 없습니다.");
+      throw new WebSocketSessionIdNullException("세션 아이디가 없습니다.");
     }
     return sessionId;
   }
