@@ -27,6 +27,11 @@ public class GpsExceptionHandler {
     return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.NOT_FOUND);
   }
 
+  @ExceptionHandler
+  public ResponseEntity<ErrorResponse> catchWebSocketHandleMessageException(WebSocketHandleMessageException e) {
+    return new ResponseEntity<>(buildErrorResponse(e.getMessage()), HttpStatus.INTERNAL_SERVER_ERROR);
+  }
+
   private ErrorResponse buildErrorResponse(String message) {
     return ErrorResponse.builder()
         .message(message)
