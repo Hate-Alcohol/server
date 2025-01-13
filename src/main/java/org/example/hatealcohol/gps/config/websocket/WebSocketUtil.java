@@ -55,6 +55,12 @@ public class WebSocketUtil {
     }
   }
 
+  public static void validationWebSocketSession(WebSocketSession hostSession) {
+    if (hostSession == null || !hostSession.isOpen()) {
+      throw new InvalidUriException("호스트 세션이 존재하지 않거나 닫혀 있습니다.");
+    }
+  }
+
   public static void sendLocationDataToSharedUser(CopyOnWriteArrayList<WebSocketSession> sharedUsers, LocationRequest locationRequest) {
 
     try {

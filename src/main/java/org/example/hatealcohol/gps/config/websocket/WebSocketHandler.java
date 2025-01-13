@@ -10,6 +10,7 @@ import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
 import org.example.hatealcohol.gps.exception.WebSocketHandleMessageException;
 import org.example.hatealcohol.gps.service.LocationService;
+import org.example.hatealcohol.user.entity.User;
 import org.example.hatealcohol.user.service.UserService;
 import org.springframework.stereotype.Component;
 import org.springframework.web.socket.CloseStatus;
@@ -42,21 +43,20 @@ public class WebSocketHandler extends TextWebSocketHandler {
     // 그와 동시에 위치를 Redis 에 기록해야 함
     validationUri(session.getUri());
     String uri = session.getUri().toString();
-    String role = extractRoleFromUri(uri); // URI에서 role=host 또는 role=shared 추출
+    String role = extractRoleFromUri(uri);
 
     if ("host".equals(role)) { // 호스트 세션 등록
       String hostSessionId = session.getId();
       HOST_SESSIONS.put(hostSessionId, session);
       SHARED_SESSIONS.putIfAbsent(hostSessionId, new CopyOnWriteArrayList<>());
       // notifySharedUsers(hostSessionId); // 공유자들에게 알림 전송
+
     } else if ("shared".equals(role)) {
 
       String hostSessionId = extractSessionIdFromUri(uri);
       WebSocketSession hostSession = HOST_SESSIONS.get(hostSessionId);
 
-      if (hostSession == null || !hostSession.isOpen()) {
-        throw new InvalidUriException("호스트 세션이 존재하지 않거나 닫혀 있습니다.");
-      }
+      validationWebSocketSession(hostSession);
 
       session.getAttributes().put("hostSessionId", hostSessionId);
 
@@ -67,7 +67,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
       });
 
       // 공유자가 들어 오면 들어왔다고 호스트에게 공유자 객체를 넘기는 로직
-      // 영통 가능하면 재밌을듯 ㅋㅋ
     }
   }
 
