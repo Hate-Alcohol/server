@@ -1,14 +1,15 @@
 package org.example.hatealcohol.gps.config.websocket;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import lombok.RequiredArgsConstructor;
 import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
-import org.example.hatealcohol.gps.exception.WebSocketHandleMessageException;
+import org.example.hatealcohol.gps.exception.WebSocketSessionIdNullException;
 import org.example.hatealcohol.gps.service.LocationService;
 import org.example.hatealcohol.user.entity.User;
 import org.example.hatealcohol.user.service.UserService;
@@ -37,57 +38,78 @@ public class WebSocketHandler extends TextWebSocketHandler {
   public void afterConnectionEstablished(WebSocketSession session) throws Exception {
 
     // TODO: 2024-12-20 사용자가 이머전시가 발생하면 공유 세션 테이블이 활성화 되고
-    // 실시간 공유가 가능해야 함
-    // 이 과정에서 사용자가 설정한 사람들에게 웹소켓 세션 정보를 전해줄 수 있어야 함
-    // 타 사용자들은 알림을 받고, 해당하는 세션을 통해 위치를 공유 받아야 함
-    // 그와 동시에 위치를 Redis 에 기록해야 함
     validationUri(session.getUri());
     String uri = session.getUri().toString();
-    String role = extractRoleFromUri(uri);
+    Map<String, String> queryParams = extractQueryParams(uri);
+
+    String role = queryParams.get("role");
+    String userId = queryParams.get("userId");
 
     if ("host".equals(role)) { // 호스트 세션 등록
-      String hostSessionId = session.getId();
-      HOST_SESSIONS.put(hostSessionId, session);
-      SHARED_SESSIONS.putIfAbsent(hostSessionId, new CopyOnWriteArrayList<>());
-      // notifySharedUsers(hostSessionId); // 공유자들에게 알림 전송
+      handleHost(session, queryParams, userId);
 
     } else if ("shared".equals(role)) {
+      handleShared(session, queryParams, userId);
 
-      String hostSessionId = extractSessionIdFromUri(uri);
-      WebSocketSession hostSession = HOST_SESSIONS.get(hostSessionId);
-
-      validationWebSocketSession(hostSession);
-
-      session.getAttributes().put("hostSessionId", hostSessionId);
-
-      // 공유자의 세션 등록
-      SHARED_SESSIONS.computeIfPresent(hostSessionId, (key, sessions) -> {
-        sessions.add(session);
-        return sessions;
-      });
-
-      // 공유자가 들어 오면 들어왔다고 호스트에게 공유자 객체를 넘기는 로직
+    } else {
+      throw new InvalidUriException("알 수 없는 역할(role)입니다.: " + role);
     }
+  }
+
+  private void handleHost(WebSocketSession session, Map<String, String> queryParams, String userId) {
+
+    String hostSessionId = session.getId();
+    HOST_SESSIONS.put(hostSessionId, session);
+    SHARED_SESSIONS.putIfAbsent(hostSessionId, new CopyOnWriteArrayList<>());
+
+    session.getAttributes().put("userId", userId);
+
+    // TODO: 공유자들에게 알림 전송
+    // notifySharedUsers(hostSessionId);
+  }
+
+  private void handleShared(WebSocketSession session, Map<String, String> queryParams, String userId) throws IOException {
+
+    String hostSessionId = queryParams.get("hostSessionId");
+
+    if (hostSessionId == null) {
+      session.close(CloseStatus.BAD_DATA);
+      throw new WebSocketSessionIdNullException("세션 아이디가 없습니다.");
+    }
+
+    WebSocketSession hostSession = HOST_SESSIONS.get(hostSessionId);
+    validationWebSocketSession(hostSession);
+    session.getAttributes().put("hostSessionId", hostSessionId);
+
+    // 공유자의 세션 등록
+    SHARED_SESSIONS.computeIfPresent(hostSessionId, (key, sessions) -> {
+      sessions.add(session);
+      return sessions;
+    });
+
+    // 공유자가 들어 오면 들어왔다고 호스트에게 공유자 객체를 넘기는 로직
+    User user = userService.getUserInfo(userId);
+    hostSession.sendMessage(new TextMessage(user.getName()));
   }
 
   // 이 메서드를 통해 실시간 위치를 보내서 표현
   @Override
   protected void handleTextMessage(WebSocketSession session, TextMessage message) {
+
     String hostSessionId = session.getId();
     String payload = message.getPayload();
+    String hostUserId = (String) session.getAttributes().get("userId");
 
     LocationRequest locationRequest = toLocationRequest(payload);
 
+    // TODO: 2025-01-13 Redis 위치 기록 저장
+    locationService.saveLocationList(hostUserId, locationRequest);
+
     // 호스트가 공유자들에게 위치 데이터를 보내는 로직
     CopyOnWriteArrayList<WebSocketSession> sharedUsers = SHARED_SESSIONS.get(hostSessionId);
-
     sendLocationDataToSharedUser(sharedUsers, locationRequest);
   }
 
-  // 이머전시가 발생한 유저를 호스트라고 지칭한다면,
-  // 호스트가 연결을 종료하면 전부 끝
-  // but, 공유자들은 나갔다가 들어올 수 있도록 설계할 생각
-  // 호스트가 나간다면 그동안의 위치 기록을 시각화 하는 로직이 실행되어야 함
   @Override
   public void afterConnectionClosed(WebSocketSession session, CloseStatus status) throws Exception {
 
@@ -106,13 +128,6 @@ public class WebSocketHandler extends TextWebSocketHandler {
       }
 
       HOST_SESSIONS.remove(sessionId);
-
-//      // 위치 데이터 정리 및 시각화
-//      String locationData = redisUtil.getLocationData(sessionId);
-//      if (locationData != null) {
-//        visualizeLocationData(locationData); // 위치 데이터 시각화 로직 호출
-//      }
-//      redisUtil.deleteLocationData(sessionId); // Redis에서 위치 데이터 제거
     } else {
 
       String hostSessionId = (String) session.getAttributes().get("hostSessionId");
@@ -124,22 +139,8 @@ public class WebSocketHandler extends TextWebSocketHandler {
           sharedSession.remove(session);
         }
       }
-
-//      SHARED_SESSIONS.forEach((hostSessionId, sessions) -> {
-//        sessions.removeIf(sharedSession -> sharedSession.getId().equals(sessionId));
-//      });
     }
 
     super.afterConnectionClosed(session, status);
   }
-
-  /**
-   * 공유 대상자들에게 알림을 전송하는 메서드.
-   */
-//  private void notifySharedUsers(String hostId) {
-//    List<String> sharedUsers = redisUtil.getSharedUsers(hostId); // Redis에서 대상자 목록 가져오기
-//    sharedUsers.forEach(userId -> {
-//      // 알림 전송 로직 추가 (예: Push Notification, Email 등)
-//    });
-//  }
 }
