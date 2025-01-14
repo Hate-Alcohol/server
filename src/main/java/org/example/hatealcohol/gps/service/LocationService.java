@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 public class LocationService {
 
   private final RedisUtil redisUtil;
-  private final long LOCATION_EXPIRATION = 172800; // 2일
+  private final static long LOCATION_EXPIRATION = 172800; // 2일
   private final String LOCATION_PREFIX = "location_history";
 
   public void saveLocationList(String sessionId, LocationRequest locationRequest) {
