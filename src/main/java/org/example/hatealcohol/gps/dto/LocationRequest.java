@@ -8,7 +8,7 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @NoArgsConstructor
-public class LocationHistoryRequest implements Serializable {
+public class LocationRequest implements Serializable {
 
 //  private Long sessionId; -> key 값으로 쓸 예정
   private Double latitude;        // 위도
@@ -16,7 +16,7 @@ public class LocationHistoryRequest implements Serializable {
   private LocalDateTime timestamp;// 타임스탬프
 
   @Builder
-  public LocationHistoryRequest(Double latitude, Double longitude, LocalDateTime timestamp) {
+  public LocationRequest(Double latitude, Double longitude, LocalDateTime timestamp) {
     this.latitude = latitude;
     this.longitude = longitude;
     this.timestamp = timestamp;

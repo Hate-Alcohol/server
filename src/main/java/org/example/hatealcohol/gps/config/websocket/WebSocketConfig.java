@@ -16,6 +16,8 @@ public class WebSocketConfig implements WebSocketConfigurer {
   @Override
   public void registerWebSocketHandlers(WebSocketHandlerRegistry registry) {
 
+    // ws://localhost:8080/gps?role={}&userId={} -> 호스트
+    // ws://localhost:8080/gps?role={}&userId={}&hosSessionId={} -> 공유자
     registry.addHandler(webSocketHandler, "/gps")
         .setAllowedOrigins("*");
   }
