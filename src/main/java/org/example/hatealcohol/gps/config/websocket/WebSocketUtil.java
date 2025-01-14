@@ -4,12 +4,13 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import org.example.hatealcohol.gps.dto.LocationRequest;
 import org.example.hatealcohol.gps.exception.InvalidUriException;
 import org.example.hatealcohol.gps.exception.WebSocketHandleMessageException;
 import org.example.hatealcohol.gps.exception.WebSocketJsonParsingException;
-import org.example.hatealcohol.gps.exception.WebSocketSessionIdNullException;
 import org.springframework.web.socket.TextMessage;
 import org.springframework.web.socket.WebSocketSession;
 
@@ -24,26 +25,35 @@ public class WebSocketUtil {
     }
   }
 
-  public static String extractSessionIdFromUri(String uri) {
-    String sessionId = null;
-    if (uri.contains("sessionId=")) {
-      sessionId = URLDecoder.decode(uri.split("sessionId=")[1], StandardCharsets.UTF_8);
+  public static Map<String, String> extractQueryParams(String uri) {
+
+    Map<String, String> queryParams = new HashMap<>();
+    String[] parts = uri.split("\\?");
+
+    if (parts.length < 2) {
+      throw new InvalidUriException("URI에 쿼리 스트링이 없습니다: " + uri);
     }
-    if (sessionId == null) {
-      throw new WebSocketSessionIdNullException("세션 아이디가 없습니다.");
+
+    String query = parts[1];
+
+    for (String param : query.split("&")) {
+      String[] keyValue = param.split("=");
+
+      if (keyValue.length < 2) {
+        throw new InvalidUriException("올바르지 않은 쿼리 파라미터 형식입니다: " + param);
+      }
+
+      String key = decode(keyValue[0]);
+      String value = decode(keyValue[1]);
+
+      queryParams.put(key, value);
     }
-    return sessionId;
+
+    return queryParams;
   }
 
-  public static String extractRoleFromUri(String uri) {
-    String role = null;
-    if (uri.contains("role=")) {
-      role = URLDecoder.decode(uri.split("role=")[1].split("&")[0], StandardCharsets.UTF_8);
-    }
-    if (role == null) {
-      throw new InvalidUriException("역할이 없습니다.");
-    }
-    return role;
+  private static String decode(String value) {
+    return URLDecoder.decode(value, StandardCharsets.UTF_8);
   }
 
   public static LocationRequest toLocationRequest(String payload) {
